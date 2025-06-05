@@ -1,7 +1,12 @@
 """This module contains methods to scrape platform data"""
 
-from dataclasses import dataclass
-from typing import Dict, List
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
+
+import httpx
+from bs4 import BeautifulSoup
+from fake_useragent import UserAgent
+from loguru import logger
 
 
 @dataclass
@@ -26,38 +31,60 @@ class PlatformMeta:
 
     name: str
     description: str
-    release_dates: List  # TODO: Pretty sure I need to init this
     manufacturer_id: int
     developers_id: int
     generation: str
     platform_type: str
     product_family: str
-    introduction_price: Dict  # TODO: Pretty sure I need to init this
     alt_name: str
-    hardware: PlatformHardware
-    other_versions: List  # TODO: Pretty sure I need to init this, may also skip this
+
+    # hardware: PlatformHardware
+
+    release_dates: List[str] = field(default_factory=list)
+    introduction_price: Dict = field(default_factory=dict)
+    other_versions: List = field(default_factory=list)
 
 
 class PlatformScraper:
     """This class is used to scrape platform information
 
     Attributes:
-        meta: dataclass storing meta information about the console
+        metadata: dataclass storing meta information about the console
         games: full list of games from this platform
         best: IGDB's top 100 games from this platform
     """
 
-    def __init__(self) -> None:
-        """Constructor for the PlatformScraper"""
-        self.meta = None
+    def __init__(self, platform: str) -> None:
+        """Constructor for the PlatformScraper
+
+        Args:
+            platform: the name of the console to append to the URL
+        """
+        self._url = f"https://www.igdb.com/platforms/{platform}"
+
+        self._metadata: Optional[PlatformMeta] = None
         self.games = None
         self.best = None
 
-    async def scrape_metadata(self) -> None:
-        raise NotImplementedError
+    @property
+    def metadata(self) -> PlatformMeta:
+        """Return the platform's metadata"""
+        if self._metadata is not None:
+            return self._metadata
 
-    async def scrape_games(self) -> None:
-        raise NotImplementedError
+        res = self._request_meta()
+        self._metadata = PlatformMeta(*self._parse_meta(res))
+        return self._metadata
 
-    async def scrape_best_games(self) -> None:
-        raise NotImplementedError
+    def _request_meta(self, timeout: int = 5) -> str:
+        """Make request on metadata"""
+        ua = UserAgent()
+        headers = {"User-Agent": ua.random, "Refer": "https://www.google.com/"}
+
+        res = httpx.get(self._url, headers=headers, timeout=timeout)
+        res.raise_for_status()
+        return res.text
+
+    def _parse_meta(self, text: str) -> Dict:
+        soup = BeautifulSoup(text, "html.parser")
+        return {}
