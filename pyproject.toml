@@ -11,7 +11,19 @@ dependencies = [
 [dependency-groups]
 dev = [
     "mypy>=1.16.0",
+    "poethepoet>=0.34.0",
     "pytest>=8.4.0",
     "pytest-cov>=6.1.1",
     "ruff>=0.11.12",
 ]
+
+[tool.poe.tasks]
+test = "pytest --cov --cov-report term-missing"
+
+_imports = "ruff check --select I --fix ."
+_format = "ruff format ."
+format.sequence = ["_imports", "_format"]
+
+_type = "mypy igdbscraper/"
+_check = "ruff check ."
+lint.sequence = ["_type", "_check"]
