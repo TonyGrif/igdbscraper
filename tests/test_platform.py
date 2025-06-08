@@ -35,6 +35,13 @@ class TestPlatformScraper:
         assert len(hardware.supported_resolutions) == 2
         assert len(hardware.connectivity) == 2
 
+    def test_scrape_other_versions(self, scraper):
+        versions = scraper.metadata.other_versions
+        assert len(versions) == 1
+        assert versions[0].name == "Slimline"
+        assert versions[0].description is not None
+        assert versions[0].link is not None
+
     def test_scrape_games(self, scraper):
         assert False
 
