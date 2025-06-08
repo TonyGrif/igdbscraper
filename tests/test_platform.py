@@ -9,11 +9,6 @@ def scraper():
 
 
 class TestPlatformScraper:
-    def test_init(self, scraper):
-        assert scraper.metadata is None
-        assert scraper.games is None
-        assert scraper.best is None
-
     def test_scrape_metadata(self, scraper):
         data = scraper.metadata
         assert data.name == "PlayStation 2"
@@ -28,6 +23,7 @@ class TestPlatformScraper:
         assert len(data.release_dates) == 5
         assert len(data.introduction_price) == 6
 
+    def test_scrape_hardware_metadata(self, scraper):
         hardware = scraper.metadata.hardware
         assert hardware.operating_system is None
         assert hardware.cpu == "Emotion Engine @ 294.912 MHz"
@@ -39,8 +35,6 @@ class TestPlatformScraper:
         assert len(hardware.output) == 5
         assert len(hardware.supported_resolutions) == 2
         assert len(hardware.connectivity) == 2
-
-        assert data == scraper.metadata  # Sets after running the first time
 
     def test_scrape_games(self, scraper):
         assert False

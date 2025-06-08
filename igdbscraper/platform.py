@@ -1,12 +1,11 @@
 """This module contains methods to scrape platform data"""
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, no_type_check
 
 import httpx
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
-from loguru import logger
 
 
 @dataclass
@@ -41,7 +40,7 @@ class PlatformMeta:
     # hardware: PlatformHardware
 
     release_dates: List[str] = field(default_factory=list)
-    introduction_price: Dict = field(default_factory=dict)
+    introduction_price: List[str] = field(default_factory=list)
     other_versions: List = field(default_factory=list)
 
 
@@ -73,7 +72,7 @@ class PlatformScraper:
             return self._metadata
 
         res = self._request_meta()
-        self._metadata = PlatformMeta(*self._parse_meta(res))
+        self._metadata = PlatformMeta(**self._parse_meta(res))
         return self._metadata
 
     def _request_meta(self, timeout: int = 5) -> str:
@@ -85,6 +84,30 @@ class PlatformScraper:
         res.raise_for_status()
         return res.text
 
+    @no_type_check
     def _parse_meta(self, text: str) -> Dict:
         soup = BeautifulSoup(text, "html.parser")
-        return {}
+        data = {}
+
+        data["name"] = soup.find("h1").text.rsplit(" ", 1)[0]
+        data["description"] = soup.find("div", {"class": "charlimit"}).text
+
+        ids = soup.find_all("div", {"class": "block"})
+        data["manufacturer_id"] = int(ids[0].text)
+        data["developers_id"] = int(ids[1].text)
+
+        dates = soup.find("div", {"class": "col-sm-4 col-xs-6"}).find_all(
+            "div", {"class": "text-muted"}
+        )
+        data["release_dates"] = [date.text for date in dates]
+
+        information = soup.find_all("div", {"class": "col-md-3 col-sm-4 col-xs-6"})
+        data["generation"] = information[0].find("a").text
+        data["platform_type"] = information[1].find("a").text
+        data["product_family"] = information[2].find("a").text
+        data["introduction_price"] = [
+            info.text for info in information[3].find_all("dd")
+        ]
+        data["alt_name"] = information[4].find("div").text
+
+        return data
