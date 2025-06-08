@@ -7,6 +7,8 @@ import httpx
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 
+_IGDB_URL = "https://www.igdb.com"
+
 
 @dataclass
 class PlatformHardware:
@@ -26,6 +28,15 @@ class PlatformHardware:
 
 
 @dataclass
+class PlatformVersion:
+    """This class store information pertaining to a unique version of the console"""
+
+    name: str
+    description: str
+    link: str  # Included as specific information on it would require another request
+
+
+@dataclass
 class PlatformMeta:
     """This class stores information about the platform itself"""
 
@@ -42,6 +53,7 @@ class PlatformMeta:
 
     release_dates: List[str] = field(default_factory=list)
     introduction_price: List[str] = field(default_factory=list)
+    other_versions: List[PlatformVersion] = field(default_factory=list)
 
 
 class PlatformScraper:
@@ -59,7 +71,7 @@ class PlatformScraper:
         Args:
             platform: the name of the console to append to the URL
         """
-        self._url = f"https://www.igdb.com/platforms/{platform}"
+        self._url = f"{_IGDB_URL}/platforms/{platform}"
 
         self._metadata: Optional[PlatformMeta] = None
         self.games = None
@@ -113,6 +125,13 @@ class PlatformScraper:
             **self._parse_hardware_block(soup.find("div", {"id": "platform-hardware"}))
         )
 
+        version_block = soup.find_all("div", {"class": "panel"})[2].find_all(
+            "div", {"class": "media overflow"}
+        )
+        data["other_versions"] = [
+            self._parse_version_block(version) for version in version_block
+        ]
+
         return data
 
     @no_type_check
@@ -136,3 +155,15 @@ class PlatformScraper:
         data["connectivity"] = table[4].find_all("td")[1].text.split(", ")
 
         return data
+
+    @no_type_check
+    def _parse_version_block(self, soup) -> PlatformVersion:
+        data = {}
+
+        data["name"] = soup.find_all("a")[1].text
+        data["link"] = f"{_IGDB_URL}/{soup.find_all('a')[1]['href']}"
+
+        soup.find("h4").decompose()
+        data["description"] = soup.text
+
+        return PlatformVersion(**data)
