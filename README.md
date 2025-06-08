@@ -6,7 +6,12 @@ Before using, check the IGDB API to see if that will fit your needs; this projec
 will not implement features already present in the API.
 
 ## Usage
-TBW
+```py
+from igdbpyscraper import PlatformScraper
+
+scraper = PlatformScraper("{PLATFORM}")
+print(scraper.metadata) # Print platform metadata
+```
 
 ## Authors
 * [TonyGrif](https://github.com/TonyGrif) - Creator and Maintainer
