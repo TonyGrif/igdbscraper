@@ -60,6 +60,7 @@ class PlatformScraper:
     """This class is used to scrape platform information
 
     Attributes:
+        url: IGDB link to the platform
         metadata: dataclass storing meta information about the console
         games: full list of games from this platform
         best: IGDB's top 100 games from this platform
@@ -78,6 +79,11 @@ class PlatformScraper:
         self.best = None
 
     @property
+    def url(self) -> str:
+        """Return the platform's link"""
+        return self._url
+
+    @property
     def metadata(self) -> PlatformMeta:
         """Return the platform's metadata"""
         if self._metadata is not None:
@@ -92,7 +98,7 @@ class PlatformScraper:
         ua = UserAgent()
         headers = {"User-Agent": ua.random, "Refer": "https://www.google.com/"}
 
-        res = httpx.get(self._url, headers=headers, timeout=timeout)
+        res = httpx.get(self.url, headers=headers, timeout=timeout)
         res.raise_for_status()
         return res.text
 
