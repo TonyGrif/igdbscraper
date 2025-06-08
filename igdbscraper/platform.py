@@ -15,13 +15,14 @@ class PlatformHardware:
     operating_system: str
     cpu: str
     memory: str
-    storage: List  # TODO: Pretty sure I need to init this
     graphics: str
     sound: str
     online_service: str
-    output: List  # TODO: Pretty sure I need to init this
-    supported_resolutions: List  # TODO: Pretty sure I need to init this
-    connectivity: List  # TODO: Pretty sure I need to init this
+
+    storage: List[str] = field(default_factory=list)
+    output: List[str] = field(default_factory=list)
+    supported_resolutions: List[str] = field(default_factory=list)
+    connectivity: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -37,11 +38,10 @@ class PlatformMeta:
     product_family: str
     alt_name: str
 
-    # hardware: PlatformHardware
+    hardware: PlatformHardware
 
     release_dates: List[str] = field(default_factory=list)
     introduction_price: List[str] = field(default_factory=list)
-    other_versions: List = field(default_factory=list)
 
 
 class PlatformScraper:
@@ -109,5 +109,30 @@ class PlatformScraper:
             info.text for info in information[3].find_all("dd")
         ]
         data["alt_name"] = information[4].find("div").text
+        data["hardware"] = PlatformHardware(
+            **self._parse_hardware_block(soup.find("div", {"id": "platform-hardware"}))
+        )
+
+        return data
+
+    @no_type_check
+    def _parse_hardware_block(self, soup) -> Dict:
+        data = {}
+        table = soup.find_all("tr")
+
+        data["operating_system"] = table[0].find_all("td")[0].text
+        data["cpu"] = table[0].find_all("td")[1].text
+
+        data["memory"] = table[1].find_all("td")[0].text
+        data["storage"] = table[1].find_all("td")[1].text.split(", ")
+
+        data["graphics"] = table[2].find_all("td")[0].text
+        data["sound"] = table[2].find_all("td")[1].text
+
+        data["online_service"] = table[3].find_all("td")[0].text
+        data["output"] = table[3].find_all("td")[1].text.split(", ")
+
+        data["supported_resolutions"] = table[4].find_all("td")[0].text.split(", ")
+        data["connectivity"] = table[4].find_all("td")[1].text.split(", ")
 
         return data
