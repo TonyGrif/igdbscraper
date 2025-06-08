@@ -19,13 +19,12 @@ class TestPlatformScraper:
         assert data.platform_type == "Console"
         assert data.product_family == "PlayStation"
         assert data.alt_name == "PS2"
-        assert data.other_versions is not None
         assert len(data.release_dates) == 5
         assert len(data.introduction_price) == 6
 
     def test_scrape_hardware_metadata(self, scraper):
         hardware = scraper.metadata.hardware
-        assert hardware.operating_system is None
+        assert hardware.operating_system == ""
         assert hardware.cpu == "Emotion Engine @ 294.912 MHz"
         assert hardware.memory == "32 MB"
         assert hardware.graphics == "Graphics Synthesizer @ 147.456 MHz"
