@@ -57,6 +57,18 @@ class PlatformMeta:
     other_versions: List[PlatformVersion] = field(default_factory=list)
 
 
+@dataclass
+class Game:
+    """Store information pertaining to a single game"""
+
+    title: str
+    rank: int
+    year: int
+    score: int
+    id: int
+    link: str
+
+
 class PlatformScraper:
     """This class is used to scrape platform information
 
@@ -74,6 +86,7 @@ class PlatformScraper:
             platform: the name of the console to append to the URL
         """
         self._url = f"{_IGDB_URL}/platforms/{platform}"
+        self._best_url = f"{_IGDB_URL}/top-100/games/platform/{platform}"
 
         opts = Options()
         opts.add_argument("--headless")
@@ -83,12 +96,17 @@ class PlatformScraper:
 
         self._metadata: Optional[PlatformMeta] = None
         self.games = None
-        self.best = None
+        self._best: Optional[List[Game]] = None
 
     @property
     def url(self) -> str:
         """Return the platform's link"""
         return self._url
+
+    @property
+    def best_url(self) -> str:
+        """Return the link to the platform's best games"""
+        return self._best_url
 
     @property
     def metadata(self) -> PlatformMeta:
@@ -106,6 +124,14 @@ class PlatformScraper:
         res = self._driver.page_source
         self._driver.close()
         return res
+
+    @property
+    def best(self) -> List[Game]:
+        """Return the platform's best 100 games according to IGDB"""
+        if self._best is not None:
+            return self._best
+
+        return self._best
 
     @no_type_check
     def _parse_meta(self, text: str) -> Dict:

@@ -42,8 +42,18 @@ class TestPlatformScraper:
         assert versions[0].description is not None
         assert versions[0].link is not None
 
-    def test_scrape_games(self, scraper):
-        pytest.skip("Game scraper not implemented")
-
     def test_scrape_bestgames(self, scraper):
+        best = scraper.best
+        assert len(best) == 100
+        assert best[6].title == "Metal Gear Solid 2: Sons of Liberty"
+
+        top = best[0]
+        assert top.title == "Metal Gear Solid 3: Snake Eater"
+        assert top.year == 2004
+        assert top.rank == 1
+        assert top.score == 92
+        assert top.id == 379
+        assert top.link is not None
+
+    def test_scrape_games(self, scraper):
         pytest.skip("Game scraper not implemented")
