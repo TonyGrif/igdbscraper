@@ -7,7 +7,7 @@ requires-python = ">=3.9"
 dependencies = [
     "beautifulsoup4>=4.13.4",
     "fake-useragent>=2.2.0",
-    "httpx>=0.28.1",
+    "selenium>=4.33.0",
 ]
 
 [dependency-groups]

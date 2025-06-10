@@ -3,9 +3,10 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, no_type_check
 
-import httpx
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
+from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
 
 _IGDB_URL = "https://www.igdb.com"
 
@@ -74,6 +75,12 @@ class PlatformScraper:
         """
         self._url = f"{_IGDB_URL}/platforms/{platform}"
 
+        opts = Options()
+        opts.add_argument("--headless")
+        ua = UserAgent()
+        opts.add_argument(f"--user-agent={ua.random}")
+        self._driver = webdriver.Firefox(options=opts)
+
         self._metadata: Optional[PlatformMeta] = None
         self.games = None
         self.best = None
@@ -93,14 +100,12 @@ class PlatformScraper:
         self._metadata = PlatformMeta(**self._parse_meta(res))
         return self._metadata
 
-    def _request_meta(self, timeout: int = 5) -> str:
-        """Make request on metadata"""
-        ua = UserAgent()
-        headers = {"User-Agent": ua.random, "Refer": "https://www.google.com/"}
-
-        res = httpx.get(self.url, headers=headers, timeout=timeout)
-        res.raise_for_status()
-        return res.text
+    def _request_meta(self) -> str:
+        """Gather the html of the metadata"""
+        self._driver.get(self.url)
+        res = self._driver.page_source
+        self._driver.close()
+        return res
 
     @no_type_check
     def _parse_meta(self, text: str) -> Dict:
