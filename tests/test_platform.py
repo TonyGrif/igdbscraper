@@ -56,4 +56,10 @@ class TestPlatformScraper:
         assert top.link is not None
 
     def test_scrape_games(self, scraper):
-        pytest.skip("Game scraper not implemented")
+        games = scraper.games(start=249, end=251, end_inclusive=True)
+        assert len(games) == 30
+
+        game = games[11]
+        assert game.title == "Persona 3"
+        assert game.year == 2006
+        assert game.link is not None

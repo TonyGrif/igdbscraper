@@ -59,15 +59,28 @@ class PlatformMeta:
 
 
 @dataclass
-class Game:
-    """Store information pertaining to a single game"""
+class _GameSuper:
+    """Data shared between ranked and regular game entries"""
 
     title: str
-    rank: int
-    year: int
-    score: int
-    id: int
     link: str
+    year: Optional[int]
+
+
+@dataclass
+class Game(_GameSuper):
+    """Game data scraped"""
+
+    platforms: List[str] = field(default_factory=list)
+
+
+@dataclass
+class RankedGame(_GameSuper):
+    """Append the rank, score, and id of the game to the Game dataclass"""
+
+    id: int
+    rank: int
+    score: int
 
 
 class PlatformScraper:
@@ -80,7 +93,7 @@ class PlatformScraper:
         best: IGDB's top 100 games from this platform
     """
 
-    def __init__(self, platform: str, sleep: int = 3) -> None:
+    def __init__(self, platform: str, sleep: int = 2) -> None:
         """Constructor for the PlatformScraper
 
         Args:
@@ -93,8 +106,8 @@ class PlatformScraper:
         self._sleep = sleep
 
         self._metadata: Optional[PlatformMeta] = None
-        self.games = None
-        self._best: Optional[List[Game]] = None
+        self._games: Optional[List[Game]] = None
+        self._best: Optional[List[RankedGame]] = None
 
     @property
     def url(self) -> str:
@@ -119,7 +132,7 @@ class PlatformScraper:
         return self._metadata
 
     @property
-    def best(self) -> List[Game]:
+    def best(self) -> List[RankedGame]:
         """Return the platform's best 100 games according to IGDB"""
         if self._best is not None:
             return self._best
@@ -129,6 +142,27 @@ class PlatformScraper:
         self.quit_driver()
         self._best = self._parse_best_games(res)
         return self._best
+
+    def games(
+        self, start: int, end: int, end_inclusive: Optional[bool] = False
+    ) -> List[Game]:
+        """Return the platform's games for a subset of pages"""
+        if self._games is not None:
+            return self._games
+
+        self._games = []
+        self.create_driver()
+
+        end = end if end_inclusive is False else end + 1
+
+        for page in range(start, end):
+            self.create_driver()
+            res = self._request_game_page(page)
+            self.quit_driver()
+            games_chunk = self._parse_games(res)
+            self._games.extend(games_chunk)
+
+        return self._games
 
     def create_driver(self) -> None:
         """Create the driver for this scraper"""
@@ -152,6 +186,13 @@ class PlatformScraper:
     def _request_best(self) -> str:
         """Gather the html of the best games"""
         self._driver.get(self.best_url)
+        time.sleep(self._sleep)
+        res = self._driver.page_source
+        return res
+
+    def _request_game_page(self, page_num: int) -> str:
+        """Gather the html of a single game page"""
+        self._driver.get(f"{self.url}/games?title=asc&page={page_num}")
         time.sleep(self._sleep)
         res = self._driver.page_source
         return res
@@ -229,7 +270,7 @@ class PlatformScraper:
         return PlatformVersion(**data)
 
     @no_type_check
-    def _parse_best_games(self, res) -> List[Game]:
+    def _parse_best_games(self, res) -> List[RankedGame]:
         soup = BeautifulSoup(res, "html.parser")
         table = soup.find("table").find("tbody")
         games = []
@@ -247,6 +288,39 @@ class PlatformScraper:
             data["id"] = int(entries[2].find("div")["data-game"])
             data["score"] = int(entries[3].find("span", {"class": "text-purple"}).text)
 
-            games.append(Game(**data))
+            games.append(RankedGame(**data))
 
         return games
+
+    @no_type_check
+    def _parse_games(self, res) -> List[Game]:
+        soup = BeautifulSoup(res, "html.parser")
+        games = soup.find_all(
+            lambda tag: tag.name == "div" and tag.get("class") == ["media"]
+        )
+        data = []
+
+        for game in games:
+            game_data = {
+                "title": game["title"],
+                "link": f"{_IGDB_URL}{game.find('a')['href']}",
+            }
+
+            if (date := game.find("time")) is not None:
+                year = date.text.strip().replace("(", "").replace(")", "")
+                try:
+                    game_data["year"] = int(year)
+                except ValueError:
+                    game_data["year"] = None
+            else:
+                game_data["year"] = None
+
+            game_data["platforms"] = []
+            platforms = game.find("div", {"class": "mar-md-bottom"})
+            if platforms is not None:
+                for link in platforms.find_all("a"):
+                    game_data["platforms"].append(link.text)
+
+            obj = Game(**game_data)
+            data.append(obj)
+        return data
