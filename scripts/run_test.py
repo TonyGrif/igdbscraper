@@ -6,6 +6,7 @@ from igdbscraper import PlatformScraper
 def main():
     scraper = PlatformScraper("ps2")
     pprint(scraper.url)
+    pprint(scraper.best)
     pprint(scraper.metadata)
 
 
