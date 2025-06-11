@@ -15,6 +15,7 @@ from igdbpyscraper import PlatformScraper
 
 scraper = PlatformScraper("{PLATFORM}")
 print(scraper.metadata) # Print platform metadata
+print(scraper.best)     # Print the IGDB top 100 games
 ```
 
 ## Authors
