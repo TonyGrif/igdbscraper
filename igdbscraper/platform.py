@@ -1,11 +1,12 @@
 """This module contains methods to scrape platform data"""
 
+import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, no_type_check
 
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
-from selenium import webdriver
+from selenium import webdriver as drive
 from selenium.webdriver.firefox.options import Options
 
 _IGDB_URL = "https://www.igdb.com"
@@ -79,20 +80,17 @@ class PlatformScraper:
         best: IGDB's top 100 games from this platform
     """
 
-    def __init__(self, platform: str) -> None:
+    def __init__(self, platform: str, sleep: int = 3) -> None:
         """Constructor for the PlatformScraper
 
         Args:
             platform: the name of the console to append to the URL
+            sleep: time to sleep after getting a page
         """
+
         self._url = f"{_IGDB_URL}/platforms/{platform}"
         self._best_url = f"{_IGDB_URL}/top-100/games/platform/{platform}"
-
-        opts = Options()
-        opts.add_argument("--headless")
-        ua = UserAgent()
-        opts.add_argument(f"--user-agent={ua.random}")
-        self._driver = webdriver.Firefox(options=opts)
+        self._sleep = sleep
 
         self._metadata: Optional[PlatformMeta] = None
         self.games = None
@@ -114,16 +112,11 @@ class PlatformScraper:
         if self._metadata is not None:
             return self._metadata
 
+        self.create_driver()
         res = self._request_meta()
+        self.quit_driver()
         self._metadata = PlatformMeta(**self._parse_meta(res))
         return self._metadata
-
-    def _request_meta(self) -> str:
-        """Gather the html of the metadata"""
-        self._driver.get(self.url)
-        res = self._driver.page_source
-        self._driver.close()
-        return res
 
     @property
     def best(self) -> List[Game]:
@@ -131,7 +124,37 @@ class PlatformScraper:
         if self._best is not None:
             return self._best
 
+        self.create_driver()
+        res = self._request_best()
+        self.quit_driver()
+        self._best = self._parse_best_games(res)
         return self._best
+
+    def create_driver(self) -> None:
+        """Create the driver for this scraper"""
+        opts = Options()
+        opts.add_argument("--headless")
+        ua = UserAgent()
+        opts.add_argument(f"--user-agent={ua.random}")
+        self._driver = drive.Firefox(options=opts)
+
+    def quit_driver(self) -> None:
+        """Quit the driver session if you are finished"""
+        self._driver.quit()
+
+    def _request_meta(self) -> str:
+        """Gather the html of the metadata"""
+        self._driver.get(self.url)
+        time.sleep(self._sleep)
+        res = self._driver.page_source
+        return res
+
+    def _request_best(self) -> str:
+        """Gather the html of the best games"""
+        self._driver.get(self.best_url)
+        time.sleep(self._sleep)
+        res = self._driver.page_source
+        return res
 
     @no_type_check
     def _parse_meta(self, text: str) -> Dict:
@@ -204,3 +227,26 @@ class PlatformScraper:
         data["description"] = soup.text
 
         return PlatformVersion(**data)
+
+    @no_type_check
+    def _parse_best_games(self, res) -> List[Game]:
+        soup = BeautifulSoup(res, "html.parser")
+        table = soup.find("table").find("tbody")
+        games = []
+
+        for row in table.find_all("tr"):
+            entries = row.find_all("td")
+            data = {}
+
+            data["rank"] = int(entries[0].text)
+            data["link"] = f"{_IGDB_URL}{entries[2].find('a')['href']}"
+            data["title"] = entries[2].find("a").text
+            data["year"] = int(
+                entries[2].find("span").text.replace("(", "").replace(")", "")
+            )
+            data["id"] = int(entries[2].find("div")["data-game"])
+            data["score"] = int(entries[3].find("span", {"class": "text-purple"}).text)
+
+            games.append(Game(**data))
+
+        return games
