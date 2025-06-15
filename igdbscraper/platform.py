@@ -89,8 +89,11 @@ class PlatformScraper:
     Attributes:
         url: IGDB link to the platform
         metadata: dataclass storing meta information about the console
-        games: full list of games from this platform
         best: IGDB's top 100 games from this platform
+
+    Methods:
+        games: Return a single page worth of games
+        subset_games: Return a subset of games based on page range
     """
 
     def __init__(self, platform: str, sleep: int = 2) -> None:
@@ -106,7 +109,6 @@ class PlatformScraper:
         self._sleep = sleep
 
         self._metadata: Optional[PlatformMeta] = None
-        self._games: Optional[List[Game]] = None
         self._best: Optional[List[RankedGame]] = None
 
     @property
@@ -145,21 +147,21 @@ class PlatformScraper:
 
     def games(self, page_num: int) -> List[Game]:
         """Return the games from a single page"""
-        self._games = []
+        data = []
         self.create_driver()
 
         res = self._request_game_page(page_num)
         self.quit_driver()
         games_chunk = self._parse_games(res)
-        self._games.extend(games_chunk)
+        data.extend(games_chunk)
 
-        return self._games
+        return data
 
     def subset_games(
         self, start: int, end: int, end_inclusive: Optional[bool] = False
     ) -> List[Game]:
         """Return the platform's games for a subset of pages"""
-        self._games = []
+        data = []
         end = end if end_inclusive is False else end + 1
 
         for page in range(start, end):
@@ -167,9 +169,9 @@ class PlatformScraper:
             res = self._request_game_page(page)
             self.quit_driver()
             games_chunk = self._parse_games(res)
-            self._games.extend(games_chunk)
+            data.extend(games_chunk)
 
-        return self._games
+        return data
 
     def create_driver(self) -> None:
         """Create the driver for this scraper"""
