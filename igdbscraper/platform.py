@@ -143,16 +143,23 @@ class PlatformScraper:
         self._best = self._parse_best_games(res)
         return self._best
 
-    def games(
-        self, start: int, end: int, end_inclusive: Optional[bool] = False
-    ) -> List[Game]:
-        """Return the platform's games for a subset of pages"""
-        if self._games is not None:
-            return self._games
-
+    def games(self, page_num: int) -> List[Game]:
+        """Return the games from a single page"""
         self._games = []
         self.create_driver()
 
+        res = self._request_game_page(page_num)
+        self.quit_driver()
+        games_chunk = self._parse_games(res)
+        self._games.extend(games_chunk)
+
+        return self._games
+
+    def subset_games(
+        self, start: int, end: int, end_inclusive: Optional[bool] = False
+    ) -> List[Game]:
+        """Return the platform's games for a subset of pages"""
+        self._games = []
         end = end if end_inclusive is False else end + 1
 
         for page in range(start, end):
