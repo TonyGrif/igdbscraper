@@ -186,7 +186,7 @@ wheels = [
 
 [[package]]
 name = "igdbscraper"
-version = "0.3"
+version = "0.4"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },

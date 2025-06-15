@@ -55,8 +55,17 @@ class TestPlatformScraper:
         assert top.id == 379
         assert top.link is not None
 
-    def test_scrape_games(self, scraper):
-        games = scraper.games(start=249, end=251, end_inclusive=True)
+    def test_scrape_game_page(self, scraper):
+        games = scraper.games(150)
+        assert len(games) == 10
+
+        game = games[2]
+        assert game.title == "Hitman: Blood Money"
+        assert game.year == 2006
+        assert game.link is not None
+
+    def test_scrape_subset_games(self, scraper):
+        games = scraper.subset_games(start=249, end=251, end_inclusive=True)
         assert len(games) == 30
 
         game = games[11]
