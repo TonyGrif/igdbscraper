@@ -14,9 +14,10 @@ A Python web scraper for the [IGDB](https://www.igdb.com/) website.
 from igdbpyscraper import PlatformScraper
 
 scraper = PlatformScraper("{PLATFORM}")
-print(scraper.metadata) # Print platform metadata
-print(scraper.best)     # Print the IGDB top 100 games
-print(scraper.games({start}, {end}))    # Print the games from the given page range
+print(scraper.metadata)                         # Print platform metadata
+print(scraper.best)                             # Print the IGDB top 100 games
+print(scraper.games({page_number}))             # Print the games found on a single page
+print(scraper.subset_games({start}, {end}))     # Print the games from the given page range
 ```
 
 ## Authors
