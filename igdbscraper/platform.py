@@ -80,7 +80,7 @@ class RankedGame(_GameSuper):
 
     id: int
     rank: int
-    score: int
+    score: float
 
 
 class PlatformScraper:
@@ -164,6 +164,8 @@ class PlatformScraper:
         data = []
         end = end if end_inclusive is False else end + 1
 
+        # A fresh driver (and user-agent) per page is required: reusing one
+        # driver across rapid page navigations trips Cloudflare's bot check.
         for page in range(start, end):
             self.create_driver()
             res = self._request_game_page(page)
@@ -184,6 +186,15 @@ class PlatformScraper:
     def quit_driver(self) -> None:
         """Quit the driver session if you are finished"""
         self._driver.quit()
+
+    @staticmethod
+    def _require(element, description: str):
+        """Raise a clear error if an expected page element could not be found"""
+        if element is None:
+            raise ValueError(
+                f"Could not find {description}; IGDB's page markup may have changed"
+            )
+        return element
 
     def _request_meta(self) -> str:
         """Gather the html of the metadata"""
@@ -211,16 +222,21 @@ class PlatformScraper:
         soup = BeautifulSoup(text, "html.parser")
         data = {}
 
-        data["name"] = soup.find("h1").text.rsplit(" ", 1)[0]
-        data["description"] = soup.find("div", {"class": "charlimit"}).text
+        data["name"] = self._require(soup.find("h1"), "name header").text.rsplit(
+            " ", 1
+        )[0]
+        data["description"] = self._require(
+            soup.find("div", {"class": "charlimit"}), "description block"
+        ).text
 
         ids = soup.find_all("div", {"class": "block"})
         data["manufacturer_id"] = int(ids[0].text)
         data["developers_id"] = int(ids[1].text)
 
-        dates = soup.find("div", {"class": "col-sm-4 col-xs-6"}).find_all(
-            "div", {"class": "text-muted"}
+        dates_container = self._require(
+            soup.find("div", {"class": "col-sm-4 col-xs-6"}), "release dates block"
         )
+        dates = dates_container.find_all("div", {"class": "text-muted"})
         data["release_dates"] = [date.text for date in dates]
 
         information = soup.find_all("div", {"class": "col-md-3 col-sm-4 col-xs-6"})
@@ -231,13 +247,21 @@ class PlatformScraper:
             info.text for info in information[3].find_all("dd")
         ]
         data["alt_name"] = information[4].find("div").text
+
+        hardware_block = self._require(
+            soup.find("div", {"id": "platform-hardware"}), "hardware block"
+        )
         data["hardware"] = PlatformHardware(
-            **self._parse_hardware_block(soup.find("div", {"id": "platform-hardware"}))
+            **self._parse_hardware_block(hardware_block)
         )
 
-        version_block = soup.find_all("div", {"class": "panel"})[2].find_all(
-            "div", {"class": "media overflow"}
-        )
+        panels = soup.find_all("div", {"class": "panel"})
+        if len(panels) < 3:
+            raise ValueError(
+                "Could not find other versions panel; IGDB's page markup may have "
+                "changed"
+            )
+        version_block = panels[2].find_all("div", {"class": "media overflow"})
         data["other_versions"] = [
             self._parse_version_block(version) for version in version_block
         ]
@@ -281,10 +305,11 @@ class PlatformScraper:
     @no_type_check
     def _parse_best_games(self, res) -> List[RankedGame]:
         soup = BeautifulSoup(res, "html.parser")
-        table = soup.find("table").find("tbody")
+        table = self._require(soup.find("table"), "best games table")
+        tbody = self._require(table.find("tbody"), "best games table body")
         games = []
 
-        for row in table.find_all("tr"):
+        for row in tbody.find_all("tr"):
             entries = row.find_all("td")
             data = {}
 
@@ -295,7 +320,9 @@ class PlatformScraper:
                 entries[2].find("span").text.replace("(", "").replace(")", "")
             )
             data["id"] = int(entries[2].find("div")["data-game"])
-            data["score"] = int(entries[3].find("span", {"class": "text-purple"}).text)
+            data["score"] = float(
+                entries[3].find("span", {"class": "text-purple"}).text
+            )
 
             games.append(RankedGame(**data))
 

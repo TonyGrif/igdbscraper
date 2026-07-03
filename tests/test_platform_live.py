@@ -15,8 +15,8 @@ class TestPlatformScraper:
         data = scraper.metadata
         assert data.name == "PlayStation 2"
         assert data.description is not None
-        assert data.manufacturer_id == 45
-        assert data.developers_id == 45
+        assert data.manufacturer_id == 18564
+        assert data.developers_id == 18564
         assert data.generation == "Sixth generation"
         assert data.platform_type == "Console"
         assert data.product_family == "PlayStation"
@@ -47,13 +47,13 @@ class TestPlatformScraper:
     def test_scrape_bestgames(self, scraper):
         best = scraper.best
         assert len(best) == 100
-        assert best[6].title == "Metal Gear Solid 2: Sons of Liberty"
+        assert best[6].title == "Grand Theft Auto: Vice City"
 
         top = best[0]
         assert top.title == "Metal Gear Solid 3: Snake Eater"
         assert top.year == 2004
         assert top.rank == 1
-        assert top.score == 92
+        assert top.score == 9.3
         assert top.id == 379
         assert top.link is not None
 
@@ -62,8 +62,8 @@ class TestPlatformScraper:
         assert len(games) == 10
 
         game = games[2]
-        assert game.title == "Hitman: Blood Money"
-        assert game.year == 2006
+        assert game.title == "Hidden invasion"
+        assert game.year == 2001
         assert game.link is not None
 
     def test_scrape_subset_games(self, scraper):
@@ -71,6 +71,6 @@ class TestPlatformScraper:
         assert len(games) == 30
 
         game = games[11]
-        assert game.title == "Persona 3"
-        assert game.year == 2006
+        assert game.title == "Orange Honey: Boku ha Kimi ni Koishiteru"
+        assert game.year == 2007
         assert game.link is not None

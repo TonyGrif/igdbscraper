@@ -21,7 +21,7 @@ dev = [
 
 [tool.poe.tasks]
 test = "pytest --cov=igdbscraper --cov-report term-missing -m 'not live'"
-test-live = "pytest -m live"
+test-all = "pytest --cov=igdbscraper --cov-report term-missing"
 
 _imports = "ruff check --select I --fix ."
 _format = "ruff format ."

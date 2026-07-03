@@ -61,14 +61,6 @@ class TestPlatformScraperMock:
         assert versions[0].description is not None
         assert versions[0].link is not None
 
-    @pytest.mark.xfail(
-        reason=(
-            "IGDB now renders best-game scores as decimals (e.g. '9.3') instead of "
-            "integers; _parse_best_games' int() call crashes on current markup. "
-            "Tracked as a Phase 2 bug fix."
-        ),
-        strict=True,
-    )
     def test_parse_bestgames(self, scraper, best_html):
         best = scraper._parse_best_games(best_html)
         assert len(best) == 100
@@ -77,6 +69,7 @@ class TestPlatformScraperMock:
         assert top.title == "Metal Gear Solid 3: Snake Eater"
         assert top.year == 2004
         assert top.rank == 1
+        assert top.score == 9.3
         assert top.id == 379
         assert top.link is not None
 

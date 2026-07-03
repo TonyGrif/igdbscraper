@@ -11,7 +11,7 @@ A Python web scraper for the [IGDB](https://www.igdb.com/) website.
 
 ## Usage
 ```py
-from igdbpyscraper import PlatformScraper
+from igdbscraper import PlatformScraper
 
 scraper = PlatformScraper("{PLATFORM}")
 print(scraper.metadata)                         # Print platform metadata
