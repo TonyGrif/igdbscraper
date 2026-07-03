@@ -1,13 +1,15 @@
 """This module contains methods to scrape platform data"""
 
-import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, no_type_check
 
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from selenium import webdriver as drive
+from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 _IGDB_URL = "https://www.igdb.com"
 
@@ -96,12 +98,12 @@ class PlatformScraper:
         subset_games: Return a subset of games based on page range
     """
 
-    def __init__(self, platform: str, sleep: int = 2) -> None:
+    def __init__(self, platform: str, sleep: int = 5) -> None:
         """Constructor for the PlatformScraper
 
         Args:
             platform: the name of the console to append to the URL
-            sleep: time to sleep after getting a page
+            sleep: max seconds to wait for a page to finish loading
         """
 
         self._url = f"{_IGDB_URL}/platforms/{platform}"
@@ -147,15 +149,10 @@ class PlatformScraper:
 
     def games(self, page_num: int) -> List[Game]:
         """Return the games from a single page"""
-        data = []
         self.create_driver()
-
         res = self._request_game_page(page_num)
         self.quit_driver()
-        games_chunk = self._parse_games(res)
-        data.extend(games_chunk)
-
-        return data
+        return self._parse_games(res)
 
     def subset_games(
         self, start: int, end: int, end_inclusive: Optional[bool] = False
@@ -196,26 +193,29 @@ class PlatformScraper:
             )
         return element
 
+    def _wait_for(self, element_id: str) -> None:
+        """Wait until a page-specific element has loaded"""
+        WebDriverWait(self._driver, self._sleep).until(
+            EC.presence_of_element_located((By.ID, element_id))
+        )
+
     def _request_meta(self) -> str:
         """Gather the html of the metadata"""
         self._driver.get(self.url)
-        time.sleep(self._sleep)
-        res = self._driver.page_source
-        return res
+        self._wait_for("platform-hardware")
+        return self._driver.page_source
 
     def _request_best(self) -> str:
         """Gather the html of the best games"""
         self._driver.get(self.best_url)
-        time.sleep(self._sleep)
-        res = self._driver.page_source
-        return res
+        self._wait_for("games-top-list")
+        return self._driver.page_source
 
     def _request_game_page(self, page_num: int) -> str:
         """Gather the html of a single game page"""
         self._driver.get(f"{self.url}/games?title=asc&page={page_num}")
-        time.sleep(self._sleep)
-        res = self._driver.page_source
-        return res
+        self._wait_for("games-page")
+        return self._driver.page_source
 
     @no_type_check
     def _parse_meta(self, text: str) -> Dict:
