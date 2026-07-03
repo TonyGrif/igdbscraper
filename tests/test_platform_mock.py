@@ -14,17 +14,17 @@ def scraper():
 
 @pytest.fixture
 def meta_html():
-    return (_FIXTURES / "platform_meta.html").read_text()
+    return (_FIXTURES / "platform_meta.html").read_text(encoding="utf-8")
 
 
 @pytest.fixture
 def best_html():
-    return (_FIXTURES / "platform_best.html").read_text()
+    return (_FIXTURES / "platform_best.html").read_text(encoding="utf-8")
 
 
 @pytest.fixture
 def games_html():
-    return (_FIXTURES / "platform_games.html").read_text()
+    return (_FIXTURES / "platform_games.html").read_text(encoding="utf-8")
 
 
 class TestPlatformScraperMock:

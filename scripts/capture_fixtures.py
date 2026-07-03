@@ -13,7 +13,7 @@ def _capture(scraper: PlatformScraper, url: str, filename: str) -> None:
     import time
 
     time.sleep(scraper._sleep)
-    (_FIXTURES / filename).write_text(scraper._driver.page_source)
+    (_FIXTURES / filename).write_text(scraper._driver.page_source, encoding="utf-8")
     scraper.quit_driver()
 
 
