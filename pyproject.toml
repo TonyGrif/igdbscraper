@@ -20,7 +20,8 @@ dev = [
 ]
 
 [tool.poe.tasks]
-test = "pytest --cov=igdbscraper --cov-report term-missing"
+test = "pytest --cov=igdbscraper --cov-report term-missing -m 'not live'"
+test-live = "pytest -m live"
 
 _imports = "ruff check --select I --fix ."
 _format = "ruff format ."
@@ -29,6 +30,11 @@ format.sequence = ["_imports", "_format"]
 _type = "mypy igdbscraper/"
 _check = "ruff check ."
 lint.sequence = ["_type", "_check"]
+
+[tool.pytest.ini_options]
+markers = [
+    "live: hits the real IGDB site via Selenium; run locally only, excluded from CI",
+]
 
 [build-system]
 requires = ["hatchling"]

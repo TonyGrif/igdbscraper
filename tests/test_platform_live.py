@@ -9,6 +9,8 @@ def scraper():
 
 
 class TestPlatformScraper:
+    pytestmark = pytest.mark.live
+
     def test_scrape_metadata(self, scraper):
         data = scraper.metadata
         assert data.name == "PlayStation 2"

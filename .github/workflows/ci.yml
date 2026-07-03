@@ -36,6 +36,5 @@ jobs:
       - name: Linting
         run: uv run poe lint
 
-      # Removed due to request errors on GH
-      # - name: Testing
-      #   run: uv run poe test
+      - name: Testing
+        run: uv run poe test
